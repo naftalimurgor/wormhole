@@ -12,10 +12,11 @@ const Web3 = require("web3");
 const web3 = new Web3("ws://localhost:8545");
 
 // CONFIG
-const initialSigners = JSON.parse(process.env.INIT_SIGNERS);
-const chainId = process.env.INIT_CHAIN_ID;
-const governanceChainId = process.env.INIT_GOV_CHAIN_ID;
-const governanceContract = process.env.INIT_GOV_CONTRACT; // bytes32
+const chainId = process.env.BRIDGE_INIT_CHAIN_ID;
+const governanceChainId = process.env.BRIDGE_INIT_GOV_CHAIN_ID;
+const governanceContract = process.env.BRIDGE_INIT_GOV_CONTRACT; // bytes32
+const WETH = process.env.BRIDGE_INIT_WETH;
+const WORMHOLE_ADDRESS = process.env.WORMHOLE_ADDRESS;
 
 // Configure accounts and client
 const operatorId = AccountId.fromString(process.env.OPERATOR_ID);
@@ -48,31 +49,35 @@ async function deploy(contractName, contractBytecode, gas, constructorFunctionPa
 }
 
 async function main() {
-  const Setup = require("../build/contracts/Setup.json");
-  const SetupAddress = await deploy("Setup", Setup.bytecode, 100000, new ContractFunctionParameters());
+  const TokenImplementation = require("../build/contracts/TokenImplementation.json");
+  const TokenImplementationAddress = await deploy("TokenImplementation", TokenImplementation.bytecode, 100000, new ContractFunctionParameters());
 
-  const Implementation = require("../build/contracts/Implementation.json");
-  const ImplementationAddress = await deploy("Implementation", Implementation.bytecode, 100000, new ContractFunctionParameters());
+  const BridgeSetup = require("../build/contracts/BridgeSetup.json");
+  const BridgeSetupAddress = await deploy("BridgeSetup", BridgeSetup.bytecode, 100000, new ContractFunctionParameters());
+  
+  const BridgeImplementation = require("../build/contracts/BridgeImplementation.json");
+  const BridgeImplementationAddress = await deploy("BridgeImplementation", BridgeImplementation.bytecode, 100000, new ContractFunctionParameters());
 
   console.log("generating setup initialization data...");
-  const setup = new web3.eth.Contract(Setup.abi, SetupAddress);
-  const initData = setup.methods
-    .setup(
-      ImplementationAddress,
-      initialSigners,
-      chainId,
-      governanceChainId,
-      governanceContract
-    )
-    .encodeABI();
 
-  const Wormhole = require("../build/contracts/Wormhole.json");
+  const setup = new web3.eth.Contract(BridgeSetup.abi, BridgeSetupAddress);
+  const initData = setup.methods.setup(
+      BridgeImplementationAddress,
+      chainId,
+      WORMHOLE_ADDRESS,
+      governanceChainId,
+      governanceContract,
+      TokenImplementationAddress,
+      WETH
+  ).encodeABI();
+
+  const TokenBridge = require("../build/contracts/TokenBridge.json");
   const params = new ContractFunctionParameters()
-    .addAddress(SetupAddress)
+    .addAddress(BridgeSetupAddress)
     .addBytes(new Uint8Array(Buffer.from(initData.substring(2), "hex")));
 
-  await deploy("Wormhole", Wormhole.bytecode, 200000, params);
-  console.log("Wormhole deploy complete")
+  await deploy("TokenBridge", TokenBridge.bytecode, 200000, params);
+  console.log("TokenBridge deploy complete")
 }
 
 main();
