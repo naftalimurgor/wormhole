@@ -35,6 +35,7 @@
     "dotenv": "^10.0.0",
     "elliptic": "^6.5.2",
     "ganache-cli": "^6.12.1",
+    "@hashgraph/hethers": "^1.1.0",
     "@hashgraph/sdk": "^2.13.1",
     "jsonfile": "^4.0.0",
     "solc": "^0.8.4",
