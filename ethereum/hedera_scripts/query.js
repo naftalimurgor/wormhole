@@ -42,6 +42,7 @@ async function queryChainId(contractName, contractAddress) {
 
   const wallet = new hethers.Wallet(eoaAccount, provider);
   const walletAddress = hethers.utils.getAddressFromAccount(operatorId);
+  console.log("Wallet address: " + walletAddress)
   console.log(`Balance from wallet:   ${hethers.utils.formatHbar((await wallet.getBalance(walletAddress)).toString())} hbar`);
 
   const BridgeGetters = require("../build/contracts/BridgeGetters.json");
@@ -56,7 +57,7 @@ async function queryChainId(contractName, contractAddress) {
   const contract = new hethers.Contract(contractAddress, abi, wallet);
 
   console.log("getting chainId")
-  const tx = await contract.chainId();
+  const tx = await contract.chainId({gasLimit: 300000});
   console.log("back from call")
   const result = await tx.wait();
   console.log("chainId: %o", result)
