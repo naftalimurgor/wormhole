@@ -6,8 +6,12 @@ import {
   nativeStringToHexAlgorand,
   uint8ArrayToNativeStringAlgorand,
 } from "../algorand";
-import { buildTokenId } from "../cosmwasm/address";
-import { canonicalAddress, humanAddress, isNativeDenom } from "../terra";
+import {
+  buildTokenId,
+  canonicalAddress,
+  humanAddress,
+} from "../cosmwasm/address";
+import { isNativeDenom } from "../terra";
 import {
   ChainId,
   ChainName,
@@ -22,8 +26,8 @@ import {
   CHAIN_ID_TERRA2,
   CHAIN_ID_UNSET,
   coalesceChainId,
+  isCosmWasmChain,
   isEVMChain,
-  isTerraChain,
 } from "./consts";
 
 /**
@@ -45,7 +49,7 @@ import {
  */
 export const isHexNativeTerra = (h: string): boolean => h.startsWith("01");
 
-const isLikely20ByteTerra = (h: string): boolean =>
+const isLikely20ByteCosmWasm = (h: string): boolean =>
   h.startsWith("000000000000000000000000");
 
 export const nativeTerraHexToDenom = (h: string): string =>
@@ -74,12 +78,12 @@ export const tryUint8ArrayToNative = (
     return hexZeroPad(hexValue(a), 20);
   } else if (chainId === CHAIN_ID_SOLANA) {
     return new PublicKey(a).toString();
-  } else if (isTerraChain(chainId)) {
+  } else if (isCosmWasmChain(chainId)) {
     const h = uint8ArrayToHex(a);
     if (isHexNativeTerra(h)) {
       return nativeTerraHexToDenom(h);
     } else {
-      if (chainId === CHAIN_ID_TERRA2 && !isLikely20ByteTerra(h)) {
+      if (chainId === CHAIN_ID_TERRA2 && !isLikely20ByteCosmWasm(h)) {
         // terra 2 has 32 byte addresses for contracts and 20 for wallets
         return humanAddress(a);
       }
@@ -191,6 +195,7 @@ export const tryNativeToHexString = (
   } else if (chainId === CHAIN_ID_SOLANA) {
     return uint8ArrayToHex(zeroPad(new PublicKey(address).toBytes(), 32));
   } else if (chainId === CHAIN_ID_TERRA) {
+    // this check must be before isCosmWasmChain
     if (isNativeDenom(address)) {
       return (
         "01" +
@@ -201,7 +206,7 @@ export const tryNativeToHexString = (
     } else {
       return uint8ArrayToHex(zeroPad(canonicalAddress(address), 32));
     }
-  } else if (chainId === CHAIN_ID_TERRA2) {
+  } else if (isCosmWasmChain(chainId)) {
     return buildTokenId(address);
   } else if (chainId === CHAIN_ID_ALGORAND) {
     return nativeStringToHexAlgorand(address);

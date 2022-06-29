@@ -54,6 +54,7 @@ export type EVMChainName =
   | "gnosis"
   | "ropsten";
 
+export type CosmWasmChainName = "terra" | "terra2" | "injective";
 export type TerraChainName = "terra" | "terra2";
 
 export type Contracts = {
@@ -147,26 +148,6 @@ const MAINNET = {
     token_bridge: undefined,
     nft_bridge: undefined,
   },
-  injective: {
-    core: undefined,
-    token_bridge: undefined,
-    nft_bridge: undefined,
-  },
-  osmosis: {
-    core: undefined,
-    token_bridge: undefined,
-    nft_bridge: undefined,
-  },
-  aptos: {
-    core: undefined,
-    token_bridge: undefined,
-    nft_bridge: undefined,
-  },
-  sui: {
-    core: undefined,
-    token_bridge: undefined,
-    nft_bridge: undefined,
-  },
   moonbeam: {
     core: undefined,
     token_bridge: undefined,
@@ -181,6 +162,26 @@ const MAINNET = {
     core: "terra12mrnzvhx3rpej6843uge2yyfppfyd3u9c3uq223q8sl48huz9juqffcnhp",
     token_bridge:
       "terra153366q50k7t8nn7gec00hg66crnhkdggpgdtaxltaq6xrutkkz3s992fw9",
+    nft_bridge: undefined,
+  },
+  injective: {
+    core: undefined,
+    token_bridge: undefined,
+    nft_bridge: undefined,
+  },
+  osmosis: {
+    core: undefined,
+    token_bridge: undefined,
+    nft_bridge: undefined,
+  },
+  sui: {
+    core: undefined,
+    token_bridge: undefined,
+    nft_bridge: undefined,
+  },
+  aptos: {
+    core: undefined,
+    token_bridge: undefined,
     nft_bridge: undefined,
   },
   arbitrum: {
@@ -286,26 +287,6 @@ const TESTNET = {
     token_bridge: undefined,
     nft_bridge: undefined,
   },
-  injective: {
-    core: undefined,
-    token_bridge: undefined,
-    nft_bridge: undefined,
-  },
-  osmosis: {
-    core: undefined,
-    token_bridge: undefined,
-    nft_bridge: undefined,
-  },
-  aptos: {
-    core: undefined,
-    token_bridge: undefined,
-    nft_bridge: undefined,
-  },
-  sui: {
-    core: undefined,
-    token_bridge: undefined,
-    nft_bridge: undefined,
-  },
   moonbeam: {
     core: "0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901",
     token_bridge: "0xbc976D4b9D57E57c3cA52e1Fd136C45FF7955A96",
@@ -320,6 +301,26 @@ const TESTNET = {
     core: "terra19nv3xr5lrmmr7egvrk2kqgw4kcn43xrtd5g0mpgwwvhetusk4k7s66jyv0",
     token_bridge:
       "terra1c02vds4uhgtrmcw7ldlg75zumdqxr8hwf7npseuf2h58jzhpgjxsgmwkvk",
+    nft_bridge: undefined,
+  },
+  injective: {
+    core: "inj1q0e70vhrv063eah90mu97sazhywmeegp7myvnh",
+    token_bridge: "inj1np4pvfw5fe9nj6ds3fv8v9cm9d8umasm5ltrtq",
+    nft_bridge: undefined,
+  },
+  osmosis: {
+    core: undefined,
+    token_bridge: undefined,
+    nft_bridge: undefined,
+  },
+  sui: {
+    core: undefined,
+    token_bridge: undefined,
+    nft_bridge: undefined,
+  },
+  aptos: {
+    core: undefined,
+    token_bridge: undefined,
     nft_bridge: undefined,
   },
   arbitrum: {
@@ -425,26 +426,6 @@ const DEVNET = {
     token_bridge: undefined,
     nft_bridge: undefined,
   },
-  injective: {
-    core: undefined,
-    token_bridge: undefined,
-    nft_bridge: undefined,
-  },
-  osmosis: {
-    core: undefined,
-    token_bridge: undefined,
-    nft_bridge: undefined,
-  },
-  aptos: {
-    core: undefined,
-    token_bridge: undefined,
-    nft_bridge: undefined,
-  },
-  sui: {
-    core: undefined,
-    token_bridge: undefined,
-    nft_bridge: undefined,
-  },
   moonbeam: {
     core: undefined,
     token_bridge: undefined,
@@ -459,6 +440,26 @@ const DEVNET = {
     core: "terra14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9ssrc8au",
     token_bridge:
       "terra1nc5tatafv6eyq7llkr2gv50ff9e22mnf70qgjlv737ktmt4eswrquka9l6",
+    nft_bridge: undefined,
+  },
+  injective: {
+    core: undefined,
+    token_bridge: undefined,
+    nft_bridge: undefined,
+  },
+  osmosis: {
+    core: undefined,
+    token_bridge: undefined,
+    nft_bridge: undefined,
+  },
+  sui: {
+    core: undefined,
+    token_bridge: undefined,
+    nft_bridge: undefined,
+  },
+  aptos: {
+    core: undefined,
+    token_bridge: undefined,
     nft_bridge: undefined,
   },
   arbitrum: {
@@ -567,8 +568,9 @@ export const CHAIN_ID_TO_NAME: ChainIdToName = Object.entries(CHAINS).reduce(
  */
 export type EVMChainId = typeof CHAINS[EVMChainName];
 
-export type TerraChainId = typeof CHAINS[TerraChainName];
+export type CosmWasmChainId = typeof CHAINS[CosmWasmChainName];
 
+export type TerraChainId = typeof CHAINS[TerraChainName];
 /**
  *
  * Returns true when called with a valid chain, and narrows the type in the
@@ -667,6 +669,17 @@ export function isEVMChain(
   } else {
     return notEVM(chainId);
   }
+}
+
+export function isCosmWasmChain(
+  chain: ChainId | ChainName
+): chain is CosmWasmChainId | CosmWasmChainName {
+  const chainId = coalesceChainId(chain);
+  return (
+    chainId === CHAIN_ID_TERRA ||
+    chainId === CHAIN_ID_TERRA2 ||
+    chainId === CHAIN_ID_INJECTIVE
+  );
 }
 
 export function isTerraChain(
