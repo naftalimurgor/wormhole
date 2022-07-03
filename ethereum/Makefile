@@ -18,7 +18,10 @@ build: node_modules ${SOURCE_FILES}
 .env: .env.test
 	cp $< $@
 
-test: build .env dependencies
+test: test-forge test-ganache
+
+.PHONY: test-ganache
+test-ganache: build .env dependencies
 	@if pgrep ganache-cli; then echo "Error: ganache-cli already running. Stop it before running tests"; exit 1; fi
 	npx ganache-cli -e 10000 --deterministic --time="1970-01-01T00:00:00+00:00" > ganache.log &
 	sleep 5
@@ -28,6 +31,10 @@ test: build .env dependencies
 .PHONY: test-upgrade
 test-upgrade: build .env dependencies
 	./simulate_upgrades
+
+.PHONY:
+test-forge:
+	forge test
 
 clean:
 	rm -rf ganache.log .env node_modules build
