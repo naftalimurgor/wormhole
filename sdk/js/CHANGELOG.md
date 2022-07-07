@@ -4,7 +4,7 @@
 
 ### Added
 
-Injective support
+Injective and Osmosis support
 
 Chain ids for Arbitrum, Optimism, and Gnosis
 

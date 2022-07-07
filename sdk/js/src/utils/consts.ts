@@ -54,7 +54,7 @@ export type EVMChainName =
   | "gnosis"
   | "ropsten";
 
-export type CosmWasmChainName = "terra" | "terra2" | "injective";
+export type CosmWasmChainName = "terra" | "terra2" | "injective" | "osmosis";
 export type TerraChainName = "terra" | "terra2";
 
 export type Contracts = {
@@ -309,7 +309,7 @@ const TESTNET = {
     nft_bridge: undefined,
   },
   osmosis: {
-    core: undefined,
+    core: "osmo1kt9gt2z4hefd4frrzqpjmhpq8p7vvwqjdy9qw05hsq7ldp4p2tnsmuagc5",
     token_bridge: undefined,
     nft_bridge: undefined,
   },
@@ -678,7 +678,8 @@ export function isCosmWasmChain(
   return (
     chainId === CHAIN_ID_TERRA ||
     chainId === CHAIN_ID_TERRA2 ||
-    chainId === CHAIN_ID_INJECTIVE
+    chainId === CHAIN_ID_INJECTIVE ||
+    chainId === CHAIN_ID_OSMOSIS
   );
 }
 

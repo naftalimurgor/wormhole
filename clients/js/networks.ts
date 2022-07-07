@@ -123,6 +123,10 @@ const MAINNET = {
     rpc: "https://rpc.gnosischain.com/",
     key: get_env_var("ETH_KEY"),
   },
+  osmosis: {
+    rpc: undefined,
+    key: undefined,
+  },
   ropsten: {
     rpc: `https://rpc.ankr.com/eth_ropsten`,
     key: get_env_var("ETH_KEY"),
@@ -236,6 +240,11 @@ const TESTNET = {
     rpc: "https://sokol.poa.network/",
     key: get_env_var("ETH_KEY_TESTNET"),
   },
+  osmosis: {
+    rpc: undefined,
+    chain_id: "osmo-test-4",
+    key: get_env_var("ETH_KEY_TESTNET"),
+  },
   ropsten: {
     rpc: `https://rpc.ankr.com/eth_ropsten`,
     key: get_env_var("ETH_KEY_TESTNET"),
@@ -346,6 +355,10 @@ const DEVNET = {
     key: undefined,
   },
   gnosis: {
+    rpc: undefined,
+    key: undefined,
+  },
+  osmosis: {
     rpc: undefined,
     key: undefined,
   },
