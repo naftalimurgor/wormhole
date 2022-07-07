@@ -304,8 +304,8 @@ const TESTNET = {
     nft_bridge: undefined,
   },
   injective: {
-    core: "inj1q0e70vhrv063eah90mu97sazhywmeegp7myvnh",
-    token_bridge: "inj1np4pvfw5fe9nj6ds3fv8v9cm9d8umasm5ltrtq",
+    core: "inj14hj2tavq8fpesdwxxcu44rty3hh90vhujaxlnz",
+    token_bridge: "inj1qg5ega6dykkxc307y25pecuufrjkxkag6xhp6y",
     nft_bridge: undefined,
   },
   osmosis: {
