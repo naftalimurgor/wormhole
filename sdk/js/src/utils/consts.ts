@@ -309,7 +309,7 @@ const TESTNET = {
     nft_bridge: undefined,
   },
   osmosis: {
-    core: "osmo1kt9gt2z4hefd4frrzqpjmhpq8p7vvwqjdy9qw05hsq7ldp4p2tnsmuagc5",
+    core: "osmo1hggkxr0hpw83f8vuft7ruvmmamsxmwk2hzz6nytdkzyup9krt0dq27sgyx",
     token_bridge: undefined,
     nft_bridge: undefined,
   },
