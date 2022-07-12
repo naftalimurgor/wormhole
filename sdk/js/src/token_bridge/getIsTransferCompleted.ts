@@ -1,19 +1,15 @@
-import { Connection, PublicKey } from "@solana/web3.js";
+import { web3 } from "@project-serum/anchor";
+import { Connection, PublicKey, PublicKeyInitData } from "@solana/web3.js";
 import { LCDClient } from "@terra-money/terra.js";
 import { Algodv2, bigIntToBytes } from "algosdk";
 import axios from "axios";
 import { ethers } from "ethers";
 import { redeemOnTerra } from ".";
-import { TERRA_REDEEMED_CHECK_WALLET_ADDRESS } from "..";
-import {
-  BITS_PER_KEY,
-  calcLogicSigAccount,
-  MAX_BITS,
-  _parseVAAAlgorand,
-} from "../algorand";
+import { claimKey, getClaim, TERRA_REDEEMED_CHECK_WALLET_ADDRESS } from "..";
+import { BITS_PER_KEY, calcLogicSigAccount, MAX_BITS, _parseVAAAlgorand } from "../algorand";
 import { getSignedVAAHash } from "../bridge";
 import { Bridge__factory } from "../ethers-contracts";
-import { importCoreWasm } from "../solana/wasm";
+import { parseVaa, SignedVaa } from "../solana/wormhole/parse";
 import { safeBigIntToNumber } from "../utils/bigint";
 
 export async function getIsTransferCompletedEth(
@@ -32,16 +28,10 @@ export async function getIsTransferCompletedTerra(
   client: LCDClient,
   gasPriceUrl: string
 ): Promise<boolean> {
-  const msg = await redeemOnTerra(
-    tokenBridgeAddress,
-    TERRA_REDEEMED_CHECK_WALLET_ADDRESS,
-    signedVAA
-  );
+  const msg = await redeemOnTerra(tokenBridgeAddress, TERRA_REDEEMED_CHECK_WALLET_ADDRESS, signedVAA);
   // TODO: remove gasPriceUrl and just use the client's gas prices
   const gasPrices = await axios.get(gasPriceUrl).then((result) => result.data);
-  const account = await client.auth.accountInfo(
-    TERRA_REDEEMED_CHECK_WALLET_ADDRESS
-  );
+  const account = await client.auth.accountInfo(TERRA_REDEEMED_CHECK_WALLET_ADDRESS);
   try {
     await client.tx.estimateFee(
       [
@@ -65,17 +55,14 @@ export async function getIsTransferCompletedTerra(
 }
 
 export async function getIsTransferCompletedSolana(
-  tokenBridgeAddress: string,
-  signedVAA: Uint8Array,
+  tokenBridgeAddress: PublicKeyInitData,
+  signedVAA: SignedVaa,
   connection: Connection
 ): Promise<boolean> {
-  const { claim_address } = await importCoreWasm();
-  const claimAddress = await claim_address(tokenBridgeAddress, signedVAA);
-  const claimInfo = await connection.getAccountInfo(
-    new PublicKey(claimAddress),
-    "confirmed"
+  const parsed = parseVaa(signedVAA);
+  return getClaim(connection, tokenBridgeAddress, parsed.emitterAddress, parsed.emitterChain, parsed.sequence).catch(
+    (e) => false
   );
-  return !!claimInfo;
 }
 
 // Algorand
@@ -88,12 +75,7 @@ export async function getIsTransferCompletedSolana(
  * @param seq The sequence number of the redemption
  * @returns true, if the bit was set and VAA was redeemed, false otherwise.
  */
-async function checkBitsSet(
-  client: Algodv2,
-  appId: bigint,
-  addr: string,
-  seq: bigint
-): Promise<boolean> {
+async function checkBitsSet(client: Algodv2, appId: bigint, addr: string, seq: bigint): Promise<boolean> {
   let retval: boolean = false;
   let appState: any[] = [];
   const acctInfo = await client.accountInformation(addr).do();
@@ -146,12 +128,7 @@ export async function getIsTransferCompletedAlgorand(
   const seq: bigint = parsedVAA.sequence;
   const chainRaw: string = parsedVAA.chainRaw; // this needs to be a hex string
   const em: string = parsedVAA.emitter; // this needs to be a hex string
-  const { doesExist, lsa } = await calcLogicSigAccount(
-    client,
-    appId,
-    seq / BigInt(MAX_BITS),
-    chainRaw + em
-  );
+  const { doesExist, lsa } = await calcLogicSigAccount(client, appId, seq / BigInt(MAX_BITS), chainRaw + em);
   if (!doesExist) {
     return false;
   }

@@ -1,19 +1,8 @@
 import axios from "axios";
 import Web3 from "web3";
 import { NodeHttpTransport } from "@improbable-eng/grpc-web-node-http-transport";
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  jest,
-  test,
-} from "@jest/globals";
-import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  Token,
-  TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
+import { afterEach, beforeEach, describe, expect, jest, test } from "@jest/globals";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { BigNumber, BigNumberish, ethers } from "ethers";
 import {
   ChainId,
@@ -31,7 +20,7 @@ import {
   parseNFTPayload,
 } from "../..";
 import getSignedVAAWithRetry from "../../rpc/getSignedVAAWithRetry";
-import { importCoreWasm, setDefaultWasm } from "../../solana/wasm";
+import { setDefaultWasm } from "../../solana/wasm";
 import {
   ETH_NODE_URL,
   ETH_PRIVATE_KEY,
@@ -45,20 +34,13 @@ import {
   TEST_SOLANA_TOKEN,
   SOLANA_HOST,
 } from "./consts";
-import {
-  NFTImplementation,
-  NFTImplementation__factory,
-} from "../../ethers-contracts";
+import { NFTImplementation, NFTImplementation__factory } from "../../ethers-contracts";
 import sha3 from "js-sha3";
-import {
-  Connection,
-  Keypair,
-  PublicKey,
-  TransactionResponse,
-} from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, TransactionResponse } from "@solana/web3.js";
 import { postVaaSolanaWithRetry } from "../../solana";
 import { tryNativeToUint8Array } from "../../utils";
 import { arrayify } from "ethers/lib/utils";
+import { parseVaa } from "../../solana/wormhole/parse";
 const ERC721 = require("@openzeppelin/contracts/build/contracts/ERC721PresetMinterPauserAutoId.json");
 
 setDefaultWasm("node");
@@ -158,8 +140,6 @@ describe("Integration Tests", () => {
   test("Send Solana SPL to Ethereum and back", (done) => {
     (async () => {
       try {
-        const { parse_vaa } = await importCoreWasm();
-
         const fromAddress = await Token.getAssociatedTokenAddress(
           ASSOCIATED_TOKEN_PROGRAM_ID,
           TOKEN_PROGRAM_ID,
@@ -168,18 +148,11 @@ describe("Integration Tests", () => {
         );
 
         // send to eth
-        const transaction1 = await _transferFromSolana(
-          fromAddress,
-          TEST_SOLANA_TOKEN,
-          signer.address,
-          CHAIN_ID_ETH
-        );
+        const transaction1 = await _transferFromSolana(fromAddress, TEST_SOLANA_TOKEN, signer.address, CHAIN_ID_ETH);
         let signedVAA = await waitUntilSolanaTxObserved(transaction1);
 
         // we get the solana token id from the VAA
-        const { tokenId } = parseNFTPayload(
-          Buffer.from(new Uint8Array(parse_vaa(signedVAA).payload))
-        );
+        const { tokenId } = parseNFTPayload(parseVaa(signedVAA).payload);
 
         await _redeemOnEth(signedVAA);
         const eth_addr = await nft_bridge.getForeignAssetEth(
@@ -192,17 +165,10 @@ describe("Integration Tests", () => {
           throw new Error("Ethereum address is null");
         }
 
-        const transaction3 = await _transferFromEth(
-          eth_addr,
-          tokenId,
-          fromAddress.toString(),
-          CHAIN_ID_SOLANA
-        );
+        const transaction3 = await _transferFromEth(eth_addr, tokenId, fromAddress.toString(), CHAIN_ID_SOLANA);
         signedVAA = await waitUntilEthTxObserved(transaction3);
 
-        const { name, symbol } = parseNFTPayload(
-          Buffer.from(new Uint8Array(parse_vaa(signedVAA).payload))
-        );
+        const { name, symbol } = parseNFTPayload(parseVaa(signedVAA).payload);
 
         // if the names match up here, it means all the spl caches work
         expect(name).toBe("Not a PUNK🎸");
@@ -213,9 +179,7 @@ describe("Integration Tests", () => {
         done();
       } catch (e) {
         console.error(e);
-        done(
-          `An error occured while trying to transfer from Solana to Ethereum: ${e}`
-        );
+        done(`An error occured while trying to transfer from Solana to Ethereum: ${e}`);
       }
     })();
   });
@@ -224,12 +188,7 @@ describe("Integration Tests", () => {
 ////////////////////////////////////////////////////////////////////////////////
 // Utils
 
-async function deployNFTOnEth(
-  name: string,
-  symbol: string,
-  uri: string,
-  how_many: number
-): Promise<NFTImplementation> {
+async function deployNFTOnEth(name: string, symbol: string, uri: string, how_many: number): Promise<NFTImplementation> {
   const accounts = await web3.eth.getAccounts();
   const nftContract = new web3.eth.Contract(ERC721.abi);
   let nft = await nftContract
@@ -256,17 +215,10 @@ async function deployNFTOnEth(
   return NFTImplementation__factory.connect(nft.options.address, signer);
 }
 
-async function waitUntilEthTxObserved(
-  receipt: ethers.ContractReceipt
-): Promise<Uint8Array> {
+async function waitUntilEthTxObserved(receipt: ethers.ContractReceipt): Promise<Uint8Array> {
   // get the sequence from the logs (needed to fetch the vaa)
-  let sequence = parseSequenceFromLogEth(
-    receipt,
-    CONTRACTS.DEVNET.ethereum.core
-  );
-  let emitterAddress = getEmitterAddressEth(
-    CONTRACTS.DEVNET.ethereum.nft_bridge
-  );
+  let sequence = parseSequenceFromLogEth(receipt, CONTRACTS.DEVNET.ethereum.core);
+  let emitterAddress = getEmitterAddressEth(CONTRACTS.DEVNET.ethereum.nft_bridge);
   // poll until the guardian(s) witness and sign the vaa
   const { vaaBytes: signedVAA } = await getSignedVAAWithRetry(
     WORMHOLE_RPC_HOSTS,
@@ -280,14 +232,10 @@ async function waitUntilEthTxObserved(
   return signedVAA;
 }
 
-async function waitUntilSolanaTxObserved(
-  response: TransactionResponse
-): Promise<Uint8Array> {
+async function waitUntilSolanaTxObserved(response: TransactionResponse): Promise<Uint8Array> {
   // get the sequence from the logs (needed to fetch the vaa)
   const sequence = parseSequenceFromLogSolana(response);
-  const emitterAddress = await getEmitterAddressSolana(
-    CONTRACTS.DEVNET.solana.nft_bridge
-  );
+  const emitterAddress = await getEmitterAddressSolana(CONTRACTS.DEVNET.solana.nft_bridge);
   // poll until the guardian(s) witness and sign the vaa
   const { vaaBytes: signedVAA } = await getSignedVAAWithRetry(
     WORMHOLE_RPC_HOSTS,
@@ -302,13 +250,7 @@ async function waitUntilSolanaTxObserved(
 }
 
 async function expectReceivedOnEth(signedVAA: Uint8Array) {
-  return expect(
-    await nft_bridge.getIsTransferCompletedEth(
-      CONTRACTS.DEVNET.ethereum.nft_bridge,
-      provider,
-      signedVAA
-    )
-  );
+  return expect(await nft_bridge.getIsTransferCompletedEth(CONTRACTS.DEVNET.ethereum.nft_bridge, provider, signedVAA));
 }
 
 async function _transferFromEth(
@@ -360,14 +302,8 @@ async function _transferFromSolana(
   return info;
 }
 
-async function _redeemOnEth(
-  signedVAA: Uint8Array
-): Promise<ethers.ContractReceipt> {
-  return nft_bridge.redeemOnEth(
-    CONTRACTS.DEVNET.ethereum.nft_bridge,
-    signer,
-    signedVAA
-  );
+async function _redeemOnEth(signedVAA: Uint8Array): Promise<ethers.ContractReceipt> {
+  return nft_bridge.redeemOnEth(CONTRACTS.DEVNET.ethereum.nft_bridge, signer, signedVAA);
 }
 
 async function _redeemOnSolana(signedVAA: Uint8Array) {

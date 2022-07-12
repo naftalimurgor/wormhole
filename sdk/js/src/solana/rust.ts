@@ -1,8 +1,4 @@
-import {
-  AccountMeta,
-  PublicKey,
-  TransactionInstruction,
-} from "@solana/web3.js";
+import { AccountMeta, PublicKey, TransactionInstruction } from "@solana/web3.js";
 // begin from clients\solana\main.ts
 export function ixFromRust(data: any): TransactionInstruction {
   const keys: AccountMeta[] = data.accounts.map(accountMetaFromRust);

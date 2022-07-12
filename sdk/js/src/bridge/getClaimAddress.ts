@@ -1,10 +1,8 @@
-import { PublicKey } from "@solana/web3.js";
-import { importCoreWasm } from "../solana/wasm";
+import { PublicKeyInitData } from "@solana/web3.js";
+import { claimKey } from "../solana";
+import { parseVaa, SignedVaa } from "../solana/wormhole/parse";
 
-export async function getClaimAddressSolana(
-  programAddress: string,
-  signedVAA: Uint8Array
-) {
-  const { claim_address } = await importCoreWasm();
-  return new PublicKey(claim_address(programAddress, signedVAA));
+export async function getClaimAddressSolana(programAddress: PublicKeyInitData, signedVaa: SignedVaa) {
+  const parsed = parseVaa(signedVaa);
+  return claimKey(programAddress, parsed.emitterAddress, parsed.emitterChain, parsed.sequence);
 }

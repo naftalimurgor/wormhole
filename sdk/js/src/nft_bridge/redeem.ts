@@ -5,7 +5,8 @@ import { fromUint8Array } from "js-base64";
 import { CHAIN_ID_SOLANA } from "..";
 import { Bridge__factory } from "../ethers-contracts";
 import { ixFromRust } from "../solana";
-import { importCoreWasm, importNftWasm } from "../solana/wasm";
+import { importNftWasm } from "../solana/wasm";
+import { parseVaa } from "../solana/wormhole/parse";
 
 export async function redeemOnEth(
   tokenBridgeAddress: string,
@@ -19,15 +20,8 @@ export async function redeemOnEth(
   return receipt;
 }
 
-export async function isNFTVAASolanaNative(
-  signedVAA: Uint8Array
-): Promise<boolean> {
-  const { parse_vaa } = await importCoreWasm();
-  const parsedVAA = parse_vaa(signedVAA);
-  const isSolanaNative =
-    Buffer.from(new Uint8Array(parsedVAA.payload)).readUInt16BE(33) ===
-    CHAIN_ID_SOLANA;
-  return isSolanaNative;
+export async function isNFTVAASolanaNative(signedVAA: Uint8Array): Promise<boolean> {
+  return parseVaa(signedVAA).payload.readUInt16BE(33) === CHAIN_ID_SOLANA;
 }
 
 export async function redeemOnSolana(
@@ -38,8 +32,7 @@ export async function redeemOnSolana(
   signedVAA: Uint8Array
 ): Promise<Transaction> {
   const isSolanaNative = await isNFTVAASolanaNative(signedVAA);
-  const { complete_transfer_wrapped_ix, complete_transfer_native_ix } =
-    await importNftWasm();
+  const { complete_transfer_wrapped_ix, complete_transfer_native_ix } = await importNftWasm();
   const ixs = [];
   if (isSolanaNative) {
     ixs.push(
@@ -81,14 +74,7 @@ export async function createMetaOnSolana(
   signedVAA: Uint8Array
 ): Promise<Transaction> {
   const { complete_transfer_wrapped_meta_ix } = await importNftWasm();
-  const ix = ixFromRust(
-    complete_transfer_wrapped_meta_ix(
-      tokenBridgeAddress,
-      bridgeAddress,
-      payerAddress,
-      signedVAA
-    )
-  );
+  const ix = ixFromRust(complete_transfer_wrapped_meta_ix(tokenBridgeAddress, bridgeAddress, payerAddress, signedVAA));
   const transaction = new Transaction().add(ix);
   const { blockhash } = await connection.getRecentBlockhash();
   transaction.recentBlockhash = blockhash;

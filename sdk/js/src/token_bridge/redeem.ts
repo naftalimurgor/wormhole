@@ -1,11 +1,5 @@
 import { AccountLayout, Token, TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
-import {
-  Connection,
-  Keypair,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-} from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import { MsgExecuteContract } from "@terra-money/terra.js";
 import { Algodv2 } from "algosdk";
 import { ethers, Overrides } from "ethers";
@@ -13,14 +7,10 @@ import { fromUint8Array } from "js-base64";
 import { TransactionSignerPair, _submitVAAAlgorand } from "../algorand";
 import { Bridge__factory } from "../ethers-contracts";
 import { ixFromRust } from "../solana";
-import { importCoreWasm, importTokenWasm } from "../solana/wasm";
-import {
-  CHAIN_ID_SOLANA,
-  WSOL_ADDRESS,
-  WSOL_DECIMALS,
-  MAX_VAA_DECIMALS,
-} from "../utils";
-import { hexToNativeString } from "../utils/array";
+import { importTokenWasm } from "../solana/wasm";
+import { parseVaa } from "../solana/wormhole/parse";
+import { CHAIN_ID_SOLANA, WSOL_ADDRESS, WSOL_DECIMALS, MAX_VAA_DECIMALS } from "../utils";
+import { hexToNativeString, tryHexToNativeString } from "../utils/array";
 import { parseTransferPayload } from "../utils/parseVaa";
 
 export async function redeemOnEth(
@@ -47,11 +37,7 @@ export async function redeemOnEthNative(
   return receipt;
 }
 
-export async function redeemOnTerra(
-  tokenBridgeAddress: string,
-  walletAddress: string,
-  signedVAA: Uint8Array
-) {
+export async function redeemOnTerra(tokenBridgeAddress: string, walletAddress: string, signedVAA: Uint8Array) {
   return new MsgExecuteContract(walletAddress, tokenBridgeAddress, {
     submit_vaa: {
       data: fromUint8Array(signedVAA),
@@ -66,36 +52,18 @@ export async function redeemAndUnwrapOnSolana(
   payerAddress: string,
   signedVAA: Uint8Array
 ) {
-  const { parse_vaa } = await importCoreWasm();
   const { complete_transfer_native_ix } = await importTokenWasm();
-  const parsedVAA = parse_vaa(signedVAA);
-  const parsedPayload = parseTransferPayload(
-    Buffer.from(new Uint8Array(parsedVAA.payload))
-  );
-  const targetAddress = hexToNativeString(
-    parsedPayload.targetAddress,
-    CHAIN_ID_SOLANA
-  );
-  if (!targetAddress) {
-    throw new Error("Failed to read the target address.");
-  }
+  const parsedPayload = parseTransferPayload(parseVaa(signedVAA).payload);
+  const targetAddress = tryHexToNativeString(parsedPayload.targetAddress, CHAIN_ID_SOLANA);
   const targetPublicKey = new PublicKey(targetAddress);
-  const targetAmount =
-    parsedPayload.amount *
-    BigInt(WSOL_DECIMALS - MAX_VAA_DECIMALS) *
-    BigInt(10);
+  const targetAmount = parsedPayload.amount * BigInt(WSOL_DECIMALS - MAX_VAA_DECIMALS) * BigInt(10);
   const rentBalance = await Token.getMinBalanceRentForExemptAccount(connection);
   const mintPublicKey = new PublicKey(WSOL_ADDRESS);
   const payerPublicKey = new PublicKey(payerAddress);
   const ancillaryKeypair = Keypair.generate();
 
   const completeTransferIx = ixFromRust(
-    complete_transfer_native_ix(
-      tokenBridgeAddress,
-      bridgeAddress,
-      payerAddress,
-      signedVAA
-    )
+    complete_transfer_native_ix(tokenBridgeAddress, bridgeAddress, payerAddress, signedVAA)
   );
 
   //This will create a temporary account where the wSOL will be moved
@@ -155,36 +123,19 @@ export async function redeemOnSolana(
   signedVAA: Uint8Array,
   feeRecipientAddress?: string
 ) {
-  const { parse_vaa } = await importCoreWasm();
-  const parsedVAA = parse_vaa(signedVAA);
-  const isSolanaNative =
-    Buffer.from(new Uint8Array(parsedVAA.payload)).readUInt16BE(65) ===
-    CHAIN_ID_SOLANA;
-  const { complete_transfer_wrapped_ix, complete_transfer_native_ix } =
-    await importTokenWasm();
+  const isSolanaNative = parseVaa(signedVAA).payload.readUInt16BE(65) === CHAIN_ID_SOLANA;
+  const { complete_transfer_wrapped_ix, complete_transfer_native_ix } = await importTokenWasm();
   const ixs = [];
   if (isSolanaNative) {
     ixs.push(
       ixFromRust(
-        complete_transfer_native_ix(
-          tokenBridgeAddress,
-          bridgeAddress,
-          payerAddress,
-          signedVAA,
-          feeRecipientAddress
-        )
+        complete_transfer_native_ix(tokenBridgeAddress, bridgeAddress, payerAddress, signedVAA, feeRecipientAddress)
       )
     );
   } else {
     ixs.push(
       ixFromRust(
-        complete_transfer_wrapped_ix(
-          tokenBridgeAddress,
-          bridgeAddress,
-          payerAddress,
-          signedVAA,
-          feeRecipientAddress
-        )
+        complete_transfer_wrapped_ix(tokenBridgeAddress, bridgeAddress, payerAddress, signedVAA, feeRecipientAddress)
       )
     );
   }
@@ -211,11 +162,5 @@ export async function redeemOnAlgorand(
   vaa: Uint8Array,
   senderAddr: string
 ): Promise<TransactionSignerPair[]> {
-  return await _submitVAAAlgorand(
-    client,
-    tokenBridgeId,
-    bridgeId,
-    vaa,
-    senderAddr
-  );
+  return await _submitVAAAlgorand(client, tokenBridgeId, bridgeId, vaa, senderAddr);
 }
