@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+### Changed
+
+Use `@certusone/wormhole-sdk-proto-web` and `@certusone/wormhole-sdk-wasm` packages
+
 ## 0.4.5
 
 ### Changed
