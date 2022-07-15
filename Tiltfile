@@ -38,6 +38,7 @@ config.define_string("bigTableKeyPath", False, "Path to BigTable json key file")
 config.define_string("webHost", False, "Public hostname for port forwards")
 
 # Components
+config.define_bool("sui", False, "Enable Sui component")
 config.define_bool("algorand", False, "Enable Algorand component")
 config.define_bool("evm2", False, "Enable second Eth component")
 config.define_bool("solana", False, "Enable Solana component")
@@ -58,6 +59,7 @@ gcpProject = cfg.get("gcpProject", "local-dev")
 bigTableKeyPath = cfg.get("bigTableKeyPath", "./event_database/devnet_key.json")
 webHost = cfg.get("webHost", "localhost")
 algorand = cfg.get("algorand", True)
+sui = cfg.get("sui", True)
 evm2 = cfg.get("evm2", True)
 solana = cfg.get("solana", True)
 terra_classic = cfg.get("terra_classic", True)
@@ -654,3 +656,28 @@ if algorand:
         trigger_mode = trigger_mode,
     )
     
+if sui:
+    k8s_yaml_with_ns("devnet/sui-devnet.yaml")
+
+    docker_build(
+        ref = "sui-node",
+        context = "sui",
+        dockerfile = "sui/Dockerfile",
+        only = ["Dockerfile", "node_builder.sh", "start_node.sh", "README.md", "cert.pem"],
+    )
+
+    docker_build(
+        ref = "sui-contracts",
+        context = "sui",
+        dockerfile = "sui/Dockerfile.contracts",
+    )
+
+    k8s_resource(
+        "sui",
+        port_forwards = [
+            port_forward(3030, name = "Node [:3030]", host = webHost),
+        ],
+        resource_deps = ["const-gen"],
+        labels = ["sui"],
+        trigger_mode = trigger_mode,
+    )
