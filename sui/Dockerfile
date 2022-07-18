@@ -9,9 +9,10 @@ RUN if [ -e /certs/cert.pem ]; then git config --global http.sslCAInfo /certs/ce
 
 RUN apt-get update && apt-get -y install libclang-dev jq cmake curl python3 --no-install-recommends
 
-COPY node_builder.sh start_node.sh  /tmp
+COPY node_builder.sh /tmp
 
 WORKDIR /tmp
 
 RUN ./node_builder.sh
 
+COPY start_node.sh  /tmp

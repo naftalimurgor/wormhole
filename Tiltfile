@@ -675,7 +675,8 @@ if sui:
     k8s_resource(
         "sui",
         port_forwards = [
-            port_forward(34525, name = "Node [:34525]", host = webHost),
+            port_forward(5001, name = "RPC [:5001]", host = webHost),
+            port_forward(9184, name = "Prometheus [:9184]", host = webHost),
         ],
         resource_deps = ["const-gen"],
         labels = ["sui"],

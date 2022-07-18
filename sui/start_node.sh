@@ -3,4 +3,6 @@
 set -x
 
 sui genesis -f
-sui start
+sui start &
+sleep 5
+rpc-server --host 0.0.0.0

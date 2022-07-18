@@ -7,8 +7,11 @@ metadata:
 spec:
   ports:
     - name: node
-      port: 34525
+      port: 5001
       targetPort: node
+    - name: prometheus
+      port: 9184
+      targetPort: prometheus
   selector:
     app: sui
 ---
@@ -37,11 +40,14 @@ spec:
             - -c
             - /tmp/start_node.sh
           ports:
-            - containerPort: 34525
+            - containerPort: 5001
               name: node
+              protocol: TCP
+            - containerPort: 9184
+              name: prometheus
               protocol: TCP
           readinessProbe:
             tcpSocket:
-              port: 34525
+              port: 5001
 
       restartPolicy: Always
