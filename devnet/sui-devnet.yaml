@@ -7,7 +7,7 @@ metadata:
 spec:
   ports:
     - name: node
-      port: 3030
+      port: 34525
       targetPort: node
   selector:
     app: sui
@@ -37,26 +37,11 @@ spec:
             - -c
             - /tmp/start_node.sh
           ports:
-            - containerPort: 3030
+            - containerPort: 34525
               name: node
               protocol: TCP
-            - containerPort: 3031
-              name: webserver
-              protocol: TCP
           readinessProbe:
             tcpSocket:
-              port: 3030
-        - name: sui-contracts
-          image: sui-contracts
-          command:
-            - /bin/sh
-            - -c
-            - "sh devnet_deploy.sh && touch success && sleep infinity"
-          readinessProbe:
-            tcpSocket:
-              port: 3030
-            periodSeconds: 1
-            initialDelaySeconds: 15
-            periodSeconds: 5
+              port: 34525
 
       restartPolicy: Always
