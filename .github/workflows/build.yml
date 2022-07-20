@@ -65,8 +65,11 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: "16"
+      - run: alias anvil="docker run -it ghcr.io/foundry-rs/foundry:nightly-79419354d47d9802811a9795d989cb98c78b3c46 anvil" && \
+             alias forge="docker run -it ghcr.io/foundry-rs/foundry:nightly-79419354d47d9802811a9795d989cb98c78b3c46 forge" && \
+             alias cast="docker run -it ghcr.io/foundry-rs/foundry:nightly-79419354d47d9802811a9795d989cb98c78b3c46 cast" \
       - run: cd ethereum && ../scripts/install-foundry
-      - run: cd ethereum && PATH=$PATH:$HOME/.foundry/bin/ make test
+      - run: cd ethereum && make test
 
   ethereum-upgrade:
     runs-on: ubuntu-20.04
