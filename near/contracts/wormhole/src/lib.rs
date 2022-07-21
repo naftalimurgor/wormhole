@@ -348,6 +348,32 @@ impl Wormhole {
     }
 
     #[payable]
+    pub fn register_emitter(&mut self, emitter: String) -> PromiseOrValue<bool> {
+        let storage_used = env::storage_usage();
+
+        self.emitters.insert(&emitter, &1);
+
+        if env::storage_usage() < storage_used {
+            env::panic_str("ImpossibleStorage");
+        }
+
+        let required_cost =
+            (Balance::from(env::storage_usage() - storage_used)) * env::storage_byte_cost();
+        let mut deposit = env::attached_deposit();
+        if required_cost > deposit {
+            env::panic_str("DepositUnderflowForToken2");
+        }
+
+        deposit -= required_cost;
+
+        if deposit > 0 {
+            PromiseOrValue::Promise(Promise::new(env::predecessor_account_id()).transfer(deposit))
+        } else {
+            PromiseOrValue::Value(false)
+        }
+    }
+
+    #[payable]
     pub fn publish_message(&mut self, data: String, nonce: u32) -> u64 {
         require!(
             env::prepaid_gas() >= Gas(10_000_000_000_000),
@@ -359,25 +385,19 @@ impl Wormhole {
             )
         );
 
-            require!(
-                env::attached_deposit() >= self.message_fee,
-                "message_fee not provided"
-            );
-            self.bank += env::attached_deposit();
+        require!(
+            env::attached_deposit() >= self.message_fee,
+            "message_fee not provided"
+        );
+        self.bank += env::attached_deposit();
 
         let s = env::predecessor_account_id().to_string();
 
-        let mut seq: u64 = 1;
-        if self.emitters.contains_key(&s) {
-            seq = self.emitters.get(&s).unwrap();
-        } else {
-            env::log_str(&format!(
-                "wormhole/{}#{}: publish_message new emitter {}",
-                file!(),
-                line!(),
-                &s
-            ));
+        if !self.emitters.contains_key(&s) {
+            env::panic_str("EmitterNotRegistered");
         }
+
+        let seq = self.emitters.get(&s).unwrap();
 
         self.emitters.insert(&s, &(seq + 1));
 
