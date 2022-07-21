@@ -83,18 +83,19 @@ impl WormholeEvent {
     }
 }
 
-//#[near_bindgen]
-//#[derive(BorshDeserialize, BorshSerialize)]
-//pub struct OldWormhole {
-//    guardians: LookupMap<u32, GuardianSetInfo>,
-//    dups: UnorderedSet<Vec<u8>>,
-//    emitters: LookupMap<String, u64>,
-//    guardian_set_expirity: u64,
-//    guardian_set_index: u32,
-//    message_fee: u64,
-//    owner_pk: PublicKey,
-//    upgrade_hash: Vec<u8>,
-//}
+#[near_bindgen]
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct OldWormhole {
+    guardians:             LookupMap<u32, GuardianSetInfo>,
+    dups:                  UnorderedSet<Vec<u8>>,
+    emitters:              LookupMap<String, u64>,
+    guardian_set_expirity: u64,
+    guardian_set_index:    u32,
+    owner_pk:              PublicKey,
+    upgrade_hash:          Vec<u8>,
+    message_fee:           u128,
+    bank:                  u128,
+}
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -253,6 +254,10 @@ fn vaa_update_guardian_set(
 
     guardian_set.expiration_time = env::block_timestamp() + storage.guardian_set_expirity;
 
+    storage
+        .guardians
+        .insert(&storage.guardian_set_index, &guardian_set);
+
     let g = GuardianSetInfo {
         addresses,
         expiration_time: 0,
@@ -354,13 +359,11 @@ impl Wormhole {
             )
         );
 
-        if self.message_fee > 0 {
             require!(
                 env::attached_deposit() >= self.message_fee,
                 "message_fee not provided"
             );
             self.bank += env::attached_deposit();
-        }
 
         let s = env::predecessor_account_id().to_string();
 
@@ -400,7 +403,7 @@ impl Wormhole {
             env::panic_str("PayForStorage");
         }
 
-        if env::prepaid_gas() < Gas(300_000_000_000_000) {
+        if env::prepaid_gas() < Gas(150_000_000_000_000) {
             env::panic_str("NotEnoughGas");
         }
 
@@ -547,30 +550,30 @@ impl Wormhole {
         return true;
     }
 
-    //    #[init(ignore_state)]
-    //    #[payable]
-    //    pub fn migrate() -> Self {
-    //        if env::attached_deposit() != 1 {
-    //            env::panic_str("Need money");
-    //        }
-    //        let old_state: OldWormhole = env::state_read().expect("failed");
-    //        if env::signer_account_pk() != old_state.owner_pk {
-    //            env::panic_str("CannotCallMigrate");
-    //        }
-    //        env::log_str(&format!("wormhole/{}#{}: migrate", file!(), line!(),));
-    //        Self {
-    //            guardians: old_state.guardians,
-    //            dups: old_state.dups,
-    //            emitters: old_state.emitters,
-    //            guardian_set_index: old_state.guardian_set_index,
-    //            guardian_set_expirity: old_state.guardian_set_expirity,
-    //            owner_pk: old_state.owner_pk,
-    //            upgrade_hash: old_state.upgrade_hash,
-    //
-    //            message_fee: 0,
-    //            bank: 0,
-    //        }
-    //    }
+    #[init(ignore_state)]
+    #[payable]
+    pub fn migrate() -> Self {
+        // call migrate on self
+        if env::attached_deposit() != 1 {
+            env::panic_str("Need money");
+        }
+        let old_state: OldWormhole = env::state_read().expect("failed");
+        if env::signer_account_pk() != old_state.owner_pk {
+            env::panic_str("CannotCallMigrate");
+        }
+        env::log_str(&format!("wormhole/{}#{}: migrate", file!(), line!(),));
+        Self {
+            guardians:             old_state.guardians,
+            dups:                  old_state.dups,
+            emitters:              old_state.emitters,
+            guardian_set_expirity: old_state.guardian_set_expirity,
+            guardian_set_index:    old_state.guardian_set_index,
+            owner_pk:              old_state.owner_pk,
+            upgrade_hash:          old_state.upgrade_hash,
+            message_fee:           old_state.message_fee,
+            bank:                  old_state.bank,
+        }
+    }
 }
 
 //  let result = await userAccount.functionCall({
