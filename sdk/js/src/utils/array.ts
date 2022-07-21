@@ -93,10 +93,6 @@ export const tryUint8ArrayToNative = (
     return uint8ArrayToNativeStringAlgorand(a);
   } else if (chainId === CHAIN_ID_NEAR) {
     throw Error("uint8ArrayToNative: Near not supported yet.");
-  } else if (chainId === CHAIN_ID_INJECTIVE) {
-    throw Error("uint8ArrayToNative: Injective not supported yet.");
-  } else if (chainId === CHAIN_ID_OSMOSIS) {
-    throw Error("uint8ArrayToNative: Osmosis not supported yet.");
   } else if (chainId === CHAIN_ID_SUI) {
     throw Error("uint8ArrayToNative: Sui not supported yet.");
   } else if (chainId === CHAIN_ID_APTOS) {
@@ -212,10 +208,6 @@ export const tryNativeToHexString = (
     return nativeStringToHexAlgorand(address);
   } else if (chainId === CHAIN_ID_NEAR) {
     throw Error("hexToNativeString: Near not supported yet.");
-  } else if (chainId === CHAIN_ID_INJECTIVE) {
-    throw Error("hexToNativeString: Injective not supported yet.");
-  } else if (chainId === CHAIN_ID_OSMOSIS) {
-    throw Error("hexToNativeString: Osmosis not supported yet.");
   } else if (chainId === CHAIN_ID_SUI) {
     throw Error("hexToNativeString: Sui not supported yet.");
   } else if (chainId === CHAIN_ID_APTOS) {

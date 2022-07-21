@@ -1,3 +1,4 @@
+import { expect, test } from "@jest/globals";
 import { zeroPad } from "ethers/lib/utils";
 import { canonicalAddress } from "..";
 import { tryUint8ArrayToNative } from "./array";
