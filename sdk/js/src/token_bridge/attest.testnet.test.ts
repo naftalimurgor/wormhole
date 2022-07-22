@@ -51,10 +51,6 @@ test.skip("testnet - injective attest native token", async () => {
         nonce: nonce,
       },
     },
-    amount: {
-      denom: "inj",
-      amount: "1",
-    },
   });
 
   /** Prepare the Transaction **/
