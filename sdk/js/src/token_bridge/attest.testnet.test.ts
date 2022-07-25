@@ -5,9 +5,13 @@ import {
   MsgExecuteContract,
   privateKeyToPublicKeyBase64,
 } from "@injectivelabs/sdk-ts";
-import { createTransaction, TxClient, TxService } from "@injectivelabs/tx-ts";
+import {
+  createTransaction,
+  TxClient,
+  TxGrpcClient,
+} from "@injectivelabs/tx-ts";
 import { PrivateKey } from "@injectivelabs/sdk-ts/dist/local";
-import { expect, test } from "@jest/globals";
+import { test } from "@jest/globals";
 import { CONTRACTS } from "..";
 
 test.skip("testnet - injective attest native token", async () => {
@@ -80,7 +84,7 @@ test.skip("testnet - injective attest native token", async () => {
   console.log("Calculate hash");
   console.log(`Transaction Hash: ${await TxClient.hash(txRaw)}`);
 
-  const txService = new TxService({
+  const txService = new TxGrpcClient({
     txRaw,
     endpoint: network.sentryGrpcApi,
   });
