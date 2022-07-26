@@ -31,8 +31,8 @@ import (
 type (
 	// Watcher is responsible for looking over wormchain blockchain and reporting new transactions to the core bridge
 	Watcher struct {
-		urlWS    string
-		urlLCD   string
+		urlWS  string
+		urlLCD string
 
 		msgChan chan *common.MessagePublication
 		setChan chan *common.GuardianSet
@@ -88,9 +88,7 @@ func NewWatcher(
 }
 
 func (e *Watcher) Run(ctx context.Context) error {
-	p2p.DefaultRegistry.SetNetworkStats(vaa.ChainIDWormchain, &gossipv1.Heartbeat_Network{
-		
-	})
+	p2p.DefaultRegistry.SetNetworkStats(vaa.ChainIDWormchain, &gossipv1.Heartbeat_Network{})
 
 	errC := make(chan error)
 	logger := supervisor.Logger(ctx)
@@ -161,7 +159,7 @@ func (e *Watcher) Run(ctx context.Context) error {
 			logger.Info("current Wormchain height", zap.Int64("block", latestBlock.Int()))
 			currentWormchainHeight.Set(float64(latestBlock.Int()))
 			p2p.DefaultRegistry.SetNetworkStats(vaa.ChainIDWormchain, &gossipv1.Heartbeat_Network{
-				Height:          latestBlock.Int(),
+				Height: latestBlock.Int(),
 			})
 		}
 	}()
@@ -230,7 +228,6 @@ func (e *Watcher) Run(ctx context.Context) error {
 		for {
 			_, message, err := c.ReadMessage()
 
-
 			if err != nil {
 				p2p.DefaultRegistry.AddErrorCount(vaa.ChainIDWormchain, 1)
 				wormchainConnectionErrors.WithLabelValues("channel_read_error").Inc()
@@ -241,7 +238,7 @@ func (e *Watcher) Run(ctx context.Context) error {
 
 			// Received a message from the blockchain
 			json := string(message)
-			
+
 			txHashRaw := gjson.Get(json, "result.events.tx\\.hash.0")
 			if !txHashRaw.Exists() {
 				logger.Warn("wormchain message does not have tx hash", zap.String("payload", json))
@@ -255,7 +252,7 @@ func (e *Watcher) Run(ctx context.Context) error {
 				continue
 			}
 
-			msgs := EventsToMessagePublications( txHash, events.Array(), logger)
+			msgs := EventsToMessagePublications(txHash, events.Array(), logger)
 			for _, msg := range msgs {
 				e.msgChan <- msg
 				wormchainMessagesConfirmed.Inc()
@@ -303,7 +300,6 @@ func (e *Watcher) Run(ctx context.Context) error {
 
 			logger.Debug("current guardian set on Wormchain",
 				zap.Any("guardianSetIndex", guardianSetIndex))
-			
 
 			resp.Body.Close()
 
@@ -324,7 +320,7 @@ func (e *Watcher) Run(ctx context.Context) error {
 }
 
 //TODO adjust this function as needed for wormchain
-func EventsToMessagePublications( txHash string, events []gjson.Result, logger *zap.Logger) []*common.MessagePublication {
+func EventsToMessagePublications(txHash string, events []gjson.Result, logger *zap.Logger) []*common.MessagePublication {
 	msgs := make([]*common.MessagePublication, 0, len(events))
 	for _, event := range events {
 		if !event.IsObject() {
@@ -415,7 +411,7 @@ func EventsToMessagePublications( txHash string, events []gjson.Result, logger *
 		}
 
 		logger.Info("new message detected on wormchain",
-			zap.String("chainId", vaa.ChainIDWormchain.String()), 
+			zap.String("chainId", vaa.ChainIDWormchain.String()),
 			zap.String("txHash", txHash),
 			zap.String("emitter", emitter),
 			zap.String("nonce", nonce),
@@ -484,7 +480,7 @@ func StringToAddress(value string) (vaa.Address, error) {
 func stringToUint(value string) (uint64, error) {
 	value = strings.TrimSuffix(value, "\"")
 	value = strings.TrimPrefix(value, "\"")
-	res, err := strconv.ParseUint(value, 10, 64) 
+	res, err := strconv.ParseUint(value, 10, 64)
 	if err != nil {
 		return 0, err
 	}
