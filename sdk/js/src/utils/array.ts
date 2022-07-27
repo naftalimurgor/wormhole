@@ -1,6 +1,7 @@
 import { arrayify, zeroPad } from "@ethersproject/bytes";
 import { PublicKey } from "@solana/web3.js";
 import { hexValue, hexZeroPad, stripZeros } from "ethers/lib/utils";
+import { CHAIN_ID_WORMHOLE_CHAIN } from ".";
 import {
   hexToNativeAssetStringAlgorand,
   nativeStringToHexAlgorand,
@@ -81,12 +82,15 @@ export const tryUint8ArrayToNative = (
     } else {
       if (chainId === CHAIN_ID_TERRA2 && !isLikely20ByteTerra(h)) {
         // terra 2 has 32 byte addresses for contracts and 20 for wallets
-        return humanAddress(a);
+        return humanAddress("terra", a);
       }
-      return humanAddress(a.slice(-20));
+      return humanAddress("terra", a.slice(-20));
     }
   } else if (chainId === CHAIN_ID_ALGORAND) {
     return uint8ArrayToNativeStringAlgorand(a);
+  } else if (chainId == CHAIN_ID_WORMHOLE_CHAIN) {
+      // wormhole-chain addresses are always 20 bytes.
+      return humanAddress("wormhole", a.slice(-20));
   } else if (chainId === CHAIN_ID_NEAR) {
     throw Error("uint8ArrayToNative: Near not supported yet.");
   } else if (chainId === CHAIN_ID_INJECTIVE) {
@@ -205,6 +209,8 @@ export const tryNativeToHexString = (
     return buildTokenId(address);
   } else if (chainId === CHAIN_ID_ALGORAND) {
     return nativeStringToHexAlgorand(address);
+  } else if (chainId == CHAIN_ID_WORMHOLE_CHAIN) {
+      return uint8ArrayToHex(zeroPad(canonicalAddress(address), 32));
   } else if (chainId === CHAIN_ID_NEAR) {
     throw Error("hexToNativeString: Near not supported yet.");
   } else if (chainId === CHAIN_ID_INJECTIVE) {
