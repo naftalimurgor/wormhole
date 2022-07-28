@@ -1,5 +1,7 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { LCDClient } from "@terra-money/terra.js";
+import { ChainGrpcWasmApi } from "@injectivelabs/sdk-ts";
+import { getNetworkInfo, Network } from "@injectivelabs/networks";
 import { Algodv2 } from "algosdk";
 import { ethers } from "ethers";
 import { fromUint8Array } from "js-base64";
@@ -60,6 +62,40 @@ export async function getForeignAssetTerra(
     );
     return result.address;
   } catch (e) {
+    return null;
+  }
+}
+
+export async function getForeignAssetInjective(
+  tokenBridgeAddress: string,
+  originChain: ChainId | ChainName,
+  originAsset: Uint8Array
+): Promise<string | null> {
+  try {
+    // TODO:  Read in network for below
+    const network = getNetworkInfo(Network.TestnetK8s);
+    const client = new ChainGrpcWasmApi(network.sentryGrpcApi);
+    const queryResult = await client.fetchSmartContractState(
+      tokenBridgeAddress,
+      Buffer.from(
+        JSON.stringify({
+          wrapped_registry: {
+            chain: coalesceChainId(originChain),
+            address: fromUint8Array(originAsset),
+          },
+        })
+      ).toString("base64")
+    );
+    let result: any = null;
+    if (typeof queryResult.data === "string") {
+      result = JSON.parse(
+        Buffer.from(queryResult.data, "base64").toString("utf-8")
+      );
+      console.log("result", result);
+    }
+    return result.address;
+  } catch (e) {
+    console.error("caught an error", e);
     return null;
   }
 }

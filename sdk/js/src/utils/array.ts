@@ -86,6 +86,8 @@ export const tryUint8ArrayToNative = (
       if (chainId === CHAIN_ID_TERRA2 && !isLikely20ByteCosmWasm(h)) {
         // terra 2 has 32 byte addresses for contracts and 20 for wallets
         return humanAddress(a);
+      } else if (chainId === CHAIN_ID_INJECTIVE) {
+        return humanAddress(a.slice(-20), "inj");
       }
       return humanAddress(a.slice(-20));
     }
