@@ -13,6 +13,7 @@ import {
   attestFromInjective,
   CHAIN_ID_ALGORAND,
   CHAIN_ID_INJECTIVE,
+  coalesceChainId,
   CONTRACTS,
   createWrappedOnInjective,
   getEmitterAddressAlgorand,
@@ -101,12 +102,15 @@ test.skip("testnet - injective query token bridge", async () => {
   const queryResult = await client.fetchSmartContractState(
     CONTRACTS.TESTNET.injective.token_bridge,
     Buffer.from(
-      '{"wrapped_registry":{"chain": 19, "address": ' +
-        tryNativeToHexString(
-          "inj13772jvadyx4j0hrlfh4jzk0v39k8uyfxrfs540",
-          "injective"
-        ) +
-        "}}"
+      JSON.stringify({
+        wrapped_registry: {
+          chain: coalesceChainId("injective"),
+          address: tryNativeToHexString(
+            "inj13772jvadyx4j0hrlfh4jzk0v39k8uyfxrfs540",
+            "injective"
+          ),
+        },
+      })
     ).toString("base64")
   );
   let result: any = null;
@@ -252,7 +256,7 @@ test.skip("testnet - injective get foreign asset", async () => {
   // expect(result?.fee?.denom).toEqual("inj");
   // expect(result?.fee?.amount).toEqual("0");
 });
-test.skip("testnet - injective create a vaa", async () => {
+test.skip("testnet - injective submit a vaa", async () => {
   try {
     const algodToken = "";
     const algodServer = "https://testnet-api.algonode.cloud";
@@ -346,6 +350,9 @@ test.skip("testnet - injective create a vaa", async () => {
     console.log("submit_vaa", JSON.stringify(msg.params.msg));
     /** Prepare the Transaction **/
     console.log("create transaction...");
+    const txFee = DEFAULT_STD_FEE;
+    txFee.amount[0] = { amount: "250000000000000", denom: "inj" };
+    txFee.gas = "500000";
     const { signBytes, txRaw } = createTransaction({
       message: msg.toDirectSign(),
       memo: "",
