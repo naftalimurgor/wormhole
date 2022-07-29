@@ -19,3 +19,11 @@ test("terra address conversion", () => {
   expect(nativeContract).toBe(nativeContract);
   // TODO: native to hex is wrong, which we should correct
 });
+
+test("injective address conversion", () => {
+  const human = "inj180rl9ezc4389t72pc3vvlkxxs5d9jx60w9eeu3";
+  const canonical = canonicalAddress(human);
+  const lpadCanonical = zeroPad(canonical, 32);
+  const native = tryUint8ArrayToNative(lpadCanonical, "injective");
+  expect(native).toBe(human);
+});
