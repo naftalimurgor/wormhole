@@ -6,8 +6,9 @@ import {
   nativeStringToHexAlgorand,
   uint8ArrayToNativeStringAlgorand,
 } from "../algorand";
+import { canonicalAddress, humanAddress } from "../cosmos";
 import { buildTokenId } from "../cosmwasm/address";
-import { canonicalAddress, humanAddress, isNativeDenom } from "../terra";
+import { isNativeDenom } from "../terra";
 import {
   ChainId,
   ChainName,
@@ -20,10 +21,12 @@ import {
   CHAIN_ID_SOLANA,
   CHAIN_ID_TERRA,
   CHAIN_ID_TERRA2,
+  CHAIN_ID_WORMHOLE_CHAIN,
   CHAIN_ID_UNSET,
   coalesceChainId,
   isEVMChain,
   isTerraChain,
+  CHAIN_ID_PYTHNET,
 } from "./consts";
 
 /**
@@ -72,7 +75,7 @@ export const tryUint8ArrayToNative = (
   const chainId = coalesceChainId(chain);
   if (isEVMChain(chainId)) {
     return hexZeroPad(hexValue(a), 20);
-  } else if (chainId === CHAIN_ID_SOLANA) {
+  } else if (chainId === CHAIN_ID_SOLANA || chainId === CHAIN_ID_PYTHNET) {
     return new PublicKey(a).toString();
   } else if (isTerraChain(chainId)) {
     const h = uint8ArrayToHex(a);
@@ -81,12 +84,15 @@ export const tryUint8ArrayToNative = (
     } else {
       if (chainId === CHAIN_ID_TERRA2 && !isLikely20ByteTerra(h)) {
         // terra 2 has 32 byte addresses for contracts and 20 for wallets
-        return humanAddress(a);
+        return humanAddress("terra", a);
       }
-      return humanAddress(a.slice(-20));
+      return humanAddress("terra", a.slice(-20));
     }
   } else if (chainId === CHAIN_ID_ALGORAND) {
     return uint8ArrayToNativeStringAlgorand(a);
+  } else if (chainId == CHAIN_ID_WORMHOLE_CHAIN) {
+    // wormhole-chain addresses are always 20 bytes.
+    return humanAddress("wormhole", a.slice(-20));
   } else if (chainId === CHAIN_ID_NEAR) {
     throw Error("uint8ArrayToNative: Near not supported yet.");
   } else if (chainId === CHAIN_ID_INJECTIVE) {
@@ -188,7 +194,7 @@ export const tryNativeToHexString = (
   const chainId = coalesceChainId(chain);
   if (isEVMChain(chainId)) {
     return uint8ArrayToHex(zeroPad(arrayify(address), 32));
-  } else if (chainId === CHAIN_ID_SOLANA) {
+  } else if (chainId === CHAIN_ID_SOLANA || chainId === CHAIN_ID_PYTHNET) {
     return uint8ArrayToHex(zeroPad(new PublicKey(address).toBytes(), 32));
   } else if (chainId === CHAIN_ID_TERRA) {
     if (isNativeDenom(address)) {
@@ -205,6 +211,8 @@ export const tryNativeToHexString = (
     return buildTokenId(address);
   } else if (chainId === CHAIN_ID_ALGORAND) {
     return nativeStringToHexAlgorand(address);
+  } else if (chainId == CHAIN_ID_WORMHOLE_CHAIN) {
+    return uint8ArrayToHex(zeroPad(canonicalAddress(address), 32));
   } else if (chainId === CHAIN_ID_NEAR) {
     throw Error("hexToNativeString: Near not supported yet.");
   } else if (chainId === CHAIN_ID_INJECTIVE) {

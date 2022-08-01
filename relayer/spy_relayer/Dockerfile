@@ -11,8 +11,8 @@ RUN apk add python3 \
 
 COPY . .
 
-RUN echo $(ls -1 .)
-RUN echo $(less Dockerfile)
+
+LABEL org.opencontainers.image.source="https://github.com/certusone/wormhole/tree/dev.v2/relayer/spy_relayer#readme"
 
 WORKDIR ./relayer/spy_relayer
 

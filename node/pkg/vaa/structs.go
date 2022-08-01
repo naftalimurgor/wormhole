@@ -132,6 +132,8 @@ func (c ChainID) String() string {
 		return "terra2"
 	case ChainIDInjective:
 		return "injective"
+	case ChainIDPythNet:
+		return "pythnet"
 	default:
 		return fmt.Sprintf("unknown chain ID: %d", c)
 	}
@@ -179,6 +181,8 @@ func ChainIDFromString(s string) (ChainID, error) {
 		return ChainIDTerra2, nil
 	case "injective":
 		return ChainIDInjective, nil
+	case "pythnet":
+		return ChainIDPythNet, nil
 	default:
 		return ChainIDUnset, fmt.Errorf("unknown chain ID: %s", s)
 	}
@@ -222,6 +226,8 @@ const (
 	ChainIDTerra2 ChainID = 18
 	// ChainIDInjective is the ChainID of Injective
 	ChainIDInjective ChainID = 19
+	// ChainIDPythNet is the ChainID of PythNet
+	ChainIDPythNet ChainID = 26
 
 	// ChainIDEthereumRopsten is the ChainID of Ethereum Ropsten
 	ChainIDEthereumRopsten ChainID = 10001
@@ -246,6 +252,8 @@ const (
 	// More details here: https://docs.wormholenetwork.com/wormhole/vaas
 	minVAALength        = 57
 	SupportedVAAVersion = 0x01
+
+	InternalTruncatedPayloadSafetyLimit = 1000
 )
 
 // Unmarshal deserializes the binary representation of a VAA
@@ -321,7 +329,7 @@ func Unmarshal(data []byte) (*VAA, error) {
 		return nil, fmt.Errorf("failed to read commitment: %w", err)
 	}
 
-	payload := make([]byte, 1000)
+	payload := make([]byte, InternalTruncatedPayloadSafetyLimit)
 	n, err := reader.Read(payload)
 	if err != nil || n == 0 {
 		return nil, fmt.Errorf("failed to read payload [%d]: %w", n, err)
@@ -500,6 +508,11 @@ func DecodeTransferPayloadHdr(payload []byte) (*TransferPayloadHdr, error) {
 	return p, nil
 }
 
+// GetEmitterChain implements the processor.Observation interface for *VAA.
+func (v *VAA) GetEmitterChain() ChainID {
+	return v.EmitterChain
+}
+
 // MustWrite calls binary.Write and panics on errors
 func MustWrite(w io.Writer, order binary.ByteOrder, data interface{}) {
 	if err := binary.Write(w, order, data); err != nil {
@@ -517,9 +530,7 @@ func StringToAddress(value string) (Address, error) {
 	}
 
 	// Trim any preceding "0x" to the address
-	if value[0:2] == "0x" {
-		value = value[2:]
-	}
+	value = strings.TrimPrefix(value, "0x")
 
 	// Decode the string from hex to binary
 	res, err := hex.DecodeString(value)
@@ -533,5 +544,15 @@ func StringToAddress(value string) (Address, error) {
 	}
 	copy(address[32-len(res):], res)
 
+	return address, nil
+}
+
+func BytesToAddress(b []byte) (Address, error) {
+	var address Address
+	if len(b) > 32 {
+		return address, fmt.Errorf("value must be no more than 32 bytes")
+	}
+
+	copy(address[32-len(b):], b)
 	return address, nil
 }
