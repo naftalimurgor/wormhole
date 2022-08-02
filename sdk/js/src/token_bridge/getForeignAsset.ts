@@ -68,13 +68,11 @@ export async function getForeignAssetTerra(
 
 export async function getForeignAssetInjective(
   tokenBridgeAddress: string,
+  client: ChainGrpcWasmApi,
   originChain: ChainId | ChainName,
   originAsset: Uint8Array
 ): Promise<string | null> {
   try {
-    // TODO:  Read in network for below
-    const network = getNetworkInfo(Network.TestnetK8s);
-    const client = new ChainGrpcWasmApi(network.sentryGrpcApi);
     const queryResult = await client.fetchSmartContractState(
       tokenBridgeAddress,
       Buffer.from(
